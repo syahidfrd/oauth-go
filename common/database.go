@@ -16,14 +16,7 @@ var DB *gorm.DB
 
 func Init() *gorm.DB {
 
-	dbHost := os.Getenv("DATABASE_HOST")
-	dbName := os.Getenv("DATABASE_NAME")
-	dbUser := os.Getenv("DATABASE_USER")
-	dbPassword := os.Getenv("DATABASE_PASSWORD")
-
-	dbURI := fmt.Sprintf("host=%s dbname=%s user=%s  password=%s sslmode=disable", dbHost, dbName, dbUser, dbPassword)
-	fmt.Println(dbURI)
-
+	dbURI := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", dbURI)
 
 	if err != nil {

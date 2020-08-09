@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/danilopolani/gocialite.v1"
 )
@@ -55,15 +57,64 @@ func OAuthCallbackHandler(c *gin.Context) {
 	code := c.Query("code")
 	provider := c.Param("provider")
 
-	user, token, err := gocial.Handle(state, code)
+	user, _, err := gocial.Handle(state, code)
 	if err != nil {
 		c.Writer.Write([]byte("Error: " + err.Error()))
 		return
 	}
 
-	fmt.Printf("%#v", token)
-	fmt.Printf("%#v", user)
-	fmt.Printf("%#v", provider)
+	userData, err := FindOneUser(&User{Provider: provider, SocialID: user.ID})
 
-	c.Writer.Write([]byte("Hi, " + user.FullName))
+	if err != nil {
+		newUser := User{
+			Role:     "user",
+			FullName: user.FullName,
+			Email:    user.Email,
+			Provider: provider,
+			Avatar:   user.Avatar,
+			SocialID: user.ID,
+		}
+
+		if err := SaveOne(&newUser); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Internal server error",
+			})
+			return
+		}
+		userData = newUser
+
+	}
+
+	jwtToken, err := createToken(&userData)
+
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"user":         userData,
+			"access_token": jwtToken,
+		},
+	})
+}
+
+func createToken(user *User) (string, error) {
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":   user.ID,
+		"user_role": user.Role,
+		"exp":       time.Now().AddDate(0, 0, 7).Unix(),
+		"iat":       time.Now().Unix(),
+	})
+
+	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("JWT_KEY")))
+
+	return tokenString, err
 }

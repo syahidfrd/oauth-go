@@ -1,17 +1,22 @@
 package users
 
 import (
-	"github.com/jinzhu/gorm"
+	"time"
+
 	"gitlab.com/nyebarid/ny-rest-api/common"
 )
 
 type User struct {
-	gorm.Model
-	Name     string
-	Email    string `gorm:"unique_index"`
-	Provider string
-	Avatar   string
-	SocialID string
+	ID        uint       `gorm:"primary_key" json:"id"`
+	Role      string     `json:"role"`
+	FullName  string     `json:"full_name"`
+	Email     string     `json:"email"`
+	Provider  string     `json:"provider"`
+	Avatar    string     `json:"avatar"`
+	SocialID  string     `json:"social_id"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 func AutoMigrate() {

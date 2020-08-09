@@ -18,6 +18,14 @@ func OAuthRegister(router *gin.RouterGroup) {
 	router.GET("/:provider/callback", OAuthCallbackHandler)
 }
 
+func SecretEndpointRegister(router *gin.RouterGroup) {
+	router.GET("/", SecretEndpoint)
+}
+
+func SecretEndpoint(c *gin.Context) {
+	c.JSON(200, gin.H{"user_id": c.MustGet("jwtUserID")})
+}
+
 func OAuthRedirectHandler(c *gin.Context) {
 	provider := c.Param("provider")
 
@@ -67,7 +75,6 @@ func OAuthCallbackHandler(c *gin.Context) {
 
 	if err != nil {
 		newUser := User{
-			Role:     "user",
 			FullName: user.FullName,
 			Email:    user.Email,
 			Provider: provider,
@@ -86,7 +93,7 @@ func OAuthCallbackHandler(c *gin.Context) {
 
 	}
 
-	jwtToken, err := createToken(&userData)
+	jwtToken, err := createToken(userData)
 
 	if err != nil {
 		fmt.Println(err)
@@ -106,7 +113,7 @@ func OAuthCallbackHandler(c *gin.Context) {
 	})
 }
 
-func createToken(user *User) (string, error) {
+func createToken(user User) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id":   user.ID,
 		"user_role": user.Role,

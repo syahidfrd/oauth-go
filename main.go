@@ -27,6 +27,9 @@ func main() {
 	v1 := r.Group("/api/v1")
 	users.OAuthRegister(v1.Group("/auth"))
 
+	v1.Use(users.IsAuth())
+	users.SecretEndpointRegister(v1.Group("/secret"))
+
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
